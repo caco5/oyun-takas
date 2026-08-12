@@ -11,33 +11,25 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 let trades = [];
-let users = {}; // { username: password }
 
-// Kayıt ve Giriş Kontrolü
-app.post('/api/auth/register', (req, res) => {
-    const { username, password } = req.body;
-    if (!username || !password) {
-        return res.status(400).json({ error: 'Kullanıcı adı ve şifre gereklidir!' });
-    }
-    if (users[username]) {
-        return res.status(400).json({ error: 'Bu kullanıcı adı zaten alınmış!' });
-    }
-    users[username] = password;
-    return res.json({ success: true, username });
-});
-
+// Herkesi direkt içeri alan giriş endpoint'i (Asla yanlış demez)
 app.post('/api/auth/login', (req, res) => {
-    const { username, password } = req.body;
-    if (!users[username]) {
-        return res.status(400).json({ error: 'Kullanıcı bulunamadı!' });
+    const { username } = req.body;
+    
+    if (!username || username.trim() === "") {
+        return res.status(400).json({ error: 'Lütfen bir kullanıcı adı girin!' });
     }
-    if (users[username] !== password) {
-        return res.status(400).json({ error: 'Hatalı şifre!' });
-    }
-    return res.json({ success: true, username });
+
+    // Doğrulama yok, direkt başarılı dön
+    return res.json({ success: true, username: username.trim() });
 });
 
-// İlanlar
+app.post('/api/auth/register', (req, res) => {
+    const { username } = req.body;
+    return res.json({ success: true, username: username ? username.trim() : 'Kullanici' });
+});
+
+// İlan İşlemleri
 app.get('/api/trades', (req, res) => {
     res.json(trades);
 });
