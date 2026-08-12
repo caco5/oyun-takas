@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Oyun Takas Pazarı</title>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #121212; color: #e0e0e0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
@@ -14,9 +15,22 @@
         input { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #333; background-color: #2a2a2a; color: #fff; }
         button { width: 100%; padding: 12px; border: none; border-radius: 5px; background-color: #2ecc71; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { background-color: #27ae60; }
-        .trade-item { background-color: #2a2a2a; border-left: 4px solid #2ecc71; padding: 12px; margin-bottom: 10px; border-radius: 4px; }
-        .game-title { font-weight: bold; color: #2ecc71; }
+        .trade-item { background-color: #2a2a2a; border-left: 4px solid #2ecc71; padding: 12px; margin-bottom: 10px; border-radius: 4px; position: relative; }
+        .game-title { font-weight: bold; color: #2ecc71; font-size: 1.1rem; }
         .contact-info { margin-top: 5px; font-size: 0.85rem; color: #f1c40f; }
+        .chat-btn { margin-top: 10px; background-color: #3498db; width: auto; padding: 8px 12px; font-size: 0.85rem; }
+        .chat-btn:hover { background-color: #2980b9; }
+
+        /* Sohbet Penceresi Modal */
+        .chat-modal { display: none; position: fixed; bottom: 10px; right: 10px; width: 90%; max-width: 350px; height: 400px; background-color: #1e1e1e; border: 2px solid #3498db; border-radius: 10px; z-index: 1000; flex-direction: column; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .chat-header { background-color: #3498db; padding: 10px; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .close-chat { cursor: pointer; font-weight: bold; }
+        .chat-messages { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .message { background-color: #2a2a2a; padding: 8px 12px; border-radius: 6px; max-width: 80%; word-break: break-word; font-size: 0.9rem; }
+        .message.my-msg { background-color: #2ecc71; color: #121212; align-self: flex-end; }
+        .chat-input-area { display: flex; padding: 10px; gap: 5px; background-color: #121212; }
+        .chat-input-area input { margin-bottom: 0; }
+        .chat-input-area button { width: 70px; padding: 10px; }
     </style>
 </head>
 <body>
@@ -29,7 +43,7 @@
                 <input type="text" id="game" placeholder="Oyun Adı (Örn: CS2, Roblox)" required>
                 <input type="text" id="offer" placeholder="Verdiğin Eşya/Hesap" required>
                 <input type="text" id="want" placeholder="İstediğin Eşya/Hesap" required>
-                <input type="text" id="contact" placeholder="İletişim Bilgin (Discord / Roblox Adı vb.)" required>
+                <input type="text" id="contact" placeholder="İletişim Bilgin (Discord / Roblox Adı)" required>
                 <button type="submit">İlanı Yayınla</button>
             </form>
         </div>
@@ -40,7 +54,23 @@
         </div>
     </div>
 
+    <!-- Canlı Sohbet Kutusu -->
+    <div id="chatModal" class="chat-modal">
+        <div class="chat-header">
+            <span id="chatTitle">İlan Sohbeti</span>
+            <span class="close-chat" onclick="closeChat()">✖</span>
+        </div>
+        <div id="chatMessages" class="chat-messages"></div>
+        <div class="chat-input-area">
+            <input type="text" id="msgInput" placeholder="Mesaj yaz..." onkeypress="if(event.key==='Enter') sendMsg()">
+            <button onclick="sendMsg()">Gönder</button>
+        </div>
+    </div>
+
     <script>
+        const socket = io();
+        let currentTradeId = null;
+
         async function fetchTrades() {
             try {
                 const res = await fetch('/api/trades');
@@ -60,7 +90,8 @@
                         <div class="game-title">[${trade.game}]</div>
                         <div>📤 <b>Verilen:</b> ${trade.offer}</div>
                         <div>📥 <b>İstenen:</b> ${trade.want}</div>
-                        <div class="contact-info">💬 <b>İletişim:</b> ${trade.contact || 'Belirtilmedi'}</div>
+                        <div class="contact-info">💬 <b>İletişim:</b> ${trade.contact}</div>
+                        <button class="chat-btn" onclick="openChat('${trade.id}', '${trade.game}')">💬 İlan Sahibiyle Konuş</button>
                     `;
                     container.appendChild(div);
                 });
@@ -84,6 +115,45 @@
 
             document.getElementById('tradeForm').reset();
             fetchTrades();
+        });
+
+        // Sohbet Açma / Kapama Fonksiyonları
+        function openChat(tradeId, gameName) {
+            currentTradeId = tradeId;
+            document.getElementById('chatTitle').innerText = gameName + " - Takas Sohbeti";
+            document.getElementById('chatMessages').innerHTML = '';
+            document.getElementById('chatModal').style.display = 'flex';
+            
+            // Odaya katıl
+            socket.emit('join_room', tradeId);
+        }
+
+        function closeChat() {
+            document.getElementById('chatModal').style.display = 'none';
+            currentTradeId = null;
+        }
+
+        function sendMsg() {
+            const input = document.getElementById('msgInput');
+            const msg = input.value.trim();
+            if(msg && currentTradeId) {
+                socket.emit('send_message', {
+                    tradeId: currentTradeId,
+                    message: msg
+                });
+                input.value = '';
+            }
+        }
+
+        // Mesaj Geldiğinde Ekran Yazdır
+        socket.on('receive_message', (data) => {
+            if(data.tradeId === currentTradeId) {
+                const msgDiv = document.createElement('div');
+                msgDiv.className = 'message';
+                msgDiv.innerText = data.message;
+                document.getElementById('chatMessages').appendChild(msgDiv);
+                document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+            }
         });
 
         fetchTrades();
