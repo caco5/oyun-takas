@@ -15,27 +15,76 @@
         input { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #333; background-color: #2a2a2a; color: #fff; }
         button { width: 100%; padding: 12px; border: none; border-radius: 5px; background-color: #2ecc71; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { background-color: #27ae60; }
+
+        /* Giriş Ekranı Pop-up */
+        .auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 2000; }
+        .auth-box { background: #1e1e1e; padding: 25px; border-radius: 10px; width: 90%; max-width: 350px; text-align: center; border: 1px solid #2ecc71; }
+        .auth-error { color: #e74c3c; font-size: 0.85rem; margin-bottom: 10px; display: none; }
+
+        /* İlan Kartı & Silme Çarpısı */
         .trade-item { background-color: #2a2a2a; border-left: 4px solid #2ecc71; padding: 12px; margin-bottom: 10px; border-radius: 4px; position: relative; }
-        .game-title { font-weight: bold; color: #2ecc71; font-size: 1.1rem; }
+        .delete-btn { position: absolute; top: 10px; right: 12px; color: #e74c3c; font-size: 1.2rem; font-weight: bold; cursor: pointer; }
+        .delete-btn:hover { color: #ff6b6b; }
+        .game-title { font-weight: bold; color: #2ecc71; font-size: 1.1rem; padding-right: 25px; }
         .contact-info { margin-top: 5px; font-size: 0.85rem; color: #f1c40f; }
+        .trade-owner { font-size: 0.75rem; color: #888; margin-top: 3px; }
         .chat-btn { margin-top: 10px; background-color: #3498db; width: auto; padding: 8px 12px; font-size: 0.85rem; }
         .chat-btn:hover { background-color: #2980b9; }
 
-        /* Sohbet Penceresi Modal */
-        .chat-modal { display: none; position: fixed; bottom: 10px; right: 10px; width: 90%; max-width: 350px; height: 400px; background-color: #1e1e1e; border: 2px solid #3498db; border-radius: 10px; z-index: 1000; flex-direction: column; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        /* Mesajlaşma Kutusu */
+        .chat-modal { display: none; position: fixed; bottom: 10px; right: 10px; width: 90%; max-width: 350px; height: 420px; background-color: #1e1e1e; border: 2px solid #3498db; border-radius: 10px; z-index: 1000; flex-direction: column; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
         .chat-header { background-color: #3498db; padding: 10px; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         .close-chat { cursor: pointer; font-weight: bold; }
         .chat-messages { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-        .message { background-color: #2a2a2a; padding: 8px 12px; border-radius: 6px; max-width: 80%; word-break: break-word; font-size: 0.9rem; }
-        .message.my-msg { background-color: #2ecc71; color: #121212; align-self: flex-end; }
+        
+        /* Mesaj Renkleri */
+        .message { padding: 8px 12px; border-radius: 6px; max-width: 80%; word-break: break-word; font-size: 0.9rem; }
+        .message.my-msg { background-color: #2ecc71; color: #121212; align-self: flex-end; } /* Benim yazdığım Yeşil */
+        .message.other-msg { background-color: #ffffff; color: #121212; align-self: flex-start; } /* Karşıdaki Beyaz */
+        .msg-sender { font-size: 0.75rem; font-weight: bold; margin-bottom: 2px; opacity: 0.8; }
+
         .chat-input-area { display: flex; padding: 10px; gap: 5px; background-color: #121212; }
         .chat-input-area input { margin-bottom: 0; }
         .chat-input-area button { width: 70px; padding: 10px; }
+
+        /* Silme Onay Modalı */
+        .confirm-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 3000; }
+        .confirm-box { background: #1e1e1e; padding: 20px; border-radius: 8px; text-align: center; width: 80%; max-width: 300px; border: 1px solid #e74c3c; }
+        .confirm-buttons { display: flex; gap: 10px; margin-top: 15px; }
+        .confirm-btn-yes { background-color: #e74c3c; }
+        .confirm-btn-no { background-color: #7f8c8d; }
     </style>
 </head>
 <body>
+
+    <!-- Giriş / Kayıt Ekranı -->
+    <div id="authOverlay" class="auth-overlay">
+        <div class="auth-box">
+            <h2>Giriş Yap / Kaydol</h2>
+            <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">İlk defa giriyorsan hesabın otomatik oluşturulur.</p>
+            <div id="authError" class="auth-error"></div>
+            <input type="text" id="authUsername" placeholder="Kullanıcı Adı">
+            <input type="password" id="authPassword" placeholder="Şifre">
+            <button onclick="login()">Giriş Yap / Kaydol</button>
+        </div>
+    </div>
+
+    <!-- Onay Penceresi (Silme için) -->
+    <div id="confirmModal" class="confirm-modal">
+        <div class="confirm-box">
+            <p>İlanı kaldırmak istiyor musun?</p>
+            <div class="confirm-buttons">
+                <button class="confirm-btn-yes" onclick="confirmDelete(true)">Evet</button>
+                <button class="confirm-btn-no" onclick="confirmDelete(false)">Hayır</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <h1>🎮 Oyun Takas Pazarı</h1>
+        <div style="text-align: right; margin-bottom: 10px; font-size: 0.9rem;">
+            Giriş Yapan: <b id="currentUserDisplay" style="color:#2ecc71;">-</b>
+        </div>
 
         <div class="card">
             <h2>Yeni Takas İlanı Oluştur</h2>
@@ -69,8 +118,41 @@
 
     <script>
         const socket = io();
+        let currentUser = null;
         let currentTradeId = null;
+        let tradeToDeleteId = null;
 
+        // Giriş Yap / Kaydol
+        async function login() {
+            const username = document.getElementById('authUsername').value.trim();
+            const password = document.getElementById('authPassword').value.trim();
+            const errorDiv = document.getElementById('authError');
+
+            if (!username || !password) {
+                errorDiv.innerText = "Lütfen isim ve şifre girin!";
+                errorDiv.style.display = "block";
+                return;
+            }
+
+            const res = await fetch('/api/auth', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await res.json();
+            if (res.ok) {
+                currentUser = data.username;
+                document.getElementById('currentUserDisplay').innerText = currentUser;
+                document.getElementById('authOverlay').style.display = 'none';
+                fetchTrades();
+            } else {
+                errorDiv.innerText = data.error;
+                errorDiv.style.display = "block";
+            }
+        }
+
+        // İlanları Getir
         async function fetchTrades() {
             try {
                 const res = await fetch('/api/trades');
@@ -87,11 +169,13 @@
                     const div = document.createElement('div');
                     div.className = 'trade-item';
                     div.innerHTML = `
+                        <span class="delete-btn" onclick="openDeleteModal('${trade.id}')">✖</span>
                         <div class="game-title">[${trade.game}]</div>
                         <div>📤 <b>Verilen:</b> ${trade.offer}</div>
                         <div>📥 <b>İstenen:</b> ${trade.want}</div>
                         <div class="contact-info">💬 <b>İletişim:</b> ${trade.contact}</div>
-                        <button class="chat-btn" onclick="openChat('${trade.id}', '${trade.game}')">💬 İlan Sahibiyle Konuş</button>
+                        <div class="trade-owner">İlan Sahibi: ${trade.owner || 'Anonim'}</div>
+                        <button class="chat-btn" onclick="openChat('${trade.id}', '${trade.game}')">💬 Sohbet Et</button>
                     `;
                     container.appendChild(div);
                 });
@@ -100,6 +184,7 @@
             }
         }
 
+        // İlan Yayınla
         document.getElementById('tradeForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const game = document.getElementById('game').value;
@@ -110,21 +195,35 @@
             await fetch('/api/trades', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ game, offer, want, contact })
+                body: JSON.stringify({ game, offer, want, contact, owner: currentUser })
             });
 
             document.getElementById('tradeForm').reset();
             fetchTrades();
         });
 
-        // Sohbet Açma / Kapama Fonksiyonları
+        // Silme Onay Penceresi Aç
+        function openDeleteModal(tradeId) {
+            tradeToDeleteId = tradeId;
+            document.getElementById('confirmModal').style.display = 'flex';
+        }
+
+        // Silme Kararı
+        async function confirmDelete(isYes) {
+            document.getElementById('confirmModal').style.display = 'none';
+            if (isYes && tradeToDeleteId) {
+                await fetch('/api/trades/' + tradeToDeleteId, { method: 'DELETE' });
+                fetchTrades();
+            }
+            tradeToDeleteId = null;
+        }
+
+        // Sohbet İşlemleri
         function openChat(tradeId, gameName) {
             currentTradeId = tradeId;
             document.getElementById('chatTitle').innerText = gameName + " - Takas Sohbeti";
             document.getElementById('chatMessages').innerHTML = '';
             document.getElementById('chatModal').style.display = 'flex';
-            
-            // Odaya katıl
             socket.emit('join_room', tradeId);
         }
 
@@ -139,24 +238,28 @@
             if(msg && currentTradeId) {
                 socket.emit('send_message', {
                     tradeId: currentTradeId,
+                    sender: currentUser,
                     message: msg
                 });
                 input.value = '';
             }
         }
 
-        // Mesaj Geldiğinde Ekran Yazdır
+        // Mesaj Geldiğinde
         socket.on('receive_message', (data) => {
             if(data.tradeId === currentTradeId) {
                 const msgDiv = document.createElement('div');
-                msgDiv.className = 'message';
-                msgDiv.innerText = data.message;
+                const isMe = data.sender === currentUser;
+                
+                msgDiv.className = `message ${isMe ? 'my-msg' : 'other-msg'}`;
+                msgDiv.innerHTML = `
+                    <div class="msg-sender">${data.sender}</div>
+                    <div>${data.message}</div>
+                `;
                 document.getElementById('chatMessages').appendChild(msgDiv);
                 document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
             }
         });
-
-        fetchTrades();
     </script>
 </body>
 </html>
