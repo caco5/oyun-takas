@@ -1,37 +1,51 @@
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const path = require('path');
+
 const app = express();
-const PORT = process.env.PORT || 3000;
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: "*" }
+});
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-let trades = [
-  { id: 1, game: "CS2", offer: "AK-47 Redline", want: "Knife" },
-  { id: 2, game: "Roblox", offer: "Frigid Horns", want: "Dominus" }
-];
+let trades = [];
 
-// Anasayfa açıldığında index.html dosyasını gönder
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
+// İlanları çek
 app.get('/api/trades', (req, res) => {
-  res.json(trades);
+    res.json(trades);
 });
 
+// Yeni ilan ekle
 app.post('/api/trades', (req, res) => {
-  const { game, offer, want } = req.body;
-  if (!game || !offer || !want) {
-    return res.status(400).json({ error: "Lütfen tüm alanları doldurun." });
-  }
-  const newTrade = { id: Date.now(), game, offer, want };
-  trades.push(newTrade);
-  res.status(201).json(newTrade);
+    const { game, offer, want, contact } = req.body;
+    const newTrade = { 
+        id: Date.now().toString(), 
+        game, 
+        offer, 
+        want, 
+        contact: contact || 'Belirtilmedi' 
+    };
+    trades.push(newTrade);
+    res.status(201).json(newTrade);
 });
 
-app.listen(PORT, () => {
-  console.log(`Sunucu http://localhost:${PORT} üzerinde çalışıyor`);
+// Canlı Sohbet Odaları (Socket.io)
+io.on('connection', (socket) => {
+    // Kullanıcı ilanın sohbet odasına girer
+    socket.on('join_room', (tradeId) => {
+        socket.join(tradeId);
+    });
+
+    // Mesaj gönderildiğinde o odadaki herkese ilet
+    socket.on('send_message', (data) => {
+        // data: { tradeId, sender, message, time }
+        io.to(data.tradeId).emit('receive_message', data);
+    });
 });
 
-module.exports = app;
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Sunucu ${PORT} portunda aktif.`));
