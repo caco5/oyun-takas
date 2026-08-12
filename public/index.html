@@ -133,11 +133,26 @@
                 document.getElementById('authUsername').value = savedUser;
                 document.getElementById('authUsername').style.display = 'none';
                 document.getElementById('authBtn').innerText = "Giriş Yap";
-                document.getElementById('switchAuth').style.display = 'none';
+                document.getElementById('switchAuth').style.display = 'block';
+                document.getElementById('switchAuth').innerText = "Farklı Hesapla Kaydol / Giriş Yap";
             }
         };
 
+        function resetToRegisterMode() {
+            localStorage.removeItem('trade_app_user');
+            isLoginMode = false;
+            document.getElementById('authTitle').innerText = "Kayıt Ol";
+            document.getElementById('authUsername').value = "";
+            document.getElementById('authUsername').style.display = 'block';
+            document.getElementById('authBtn').innerText = "Kaydol";
+            document.getElementById('switchAuth').innerText = "Zaten hesabın var mı? Giriş Yap";
+        }
+
         function toggleAuthMode() {
+            if (document.getElementById('authUsername').style.display === 'none') {
+                resetToRegisterMode();
+                return;
+            }
             isLoginMode = !isLoginMode;
             document.getElementById('authError').style.display = "none";
             if (isLoginMode) {
@@ -180,6 +195,12 @@
                 } else {
                     errorDiv.innerText = data.error || 'Bir hata oluştu!';
                     errorDiv.style.display = "block";
+                    // Eğer kullanıcı sunucuda bulunamadıysa hemen kayıt moduna düşür
+                    if(data.error === 'Kullanıcı bulunamadı!') {
+                        setTimeout(() => {
+                            resetToRegisterMode();
+                        }, 1200);
+                    }
                 }
             } catch (err) {
                 errorDiv.innerText = "Sunucuya bağlanılamadı. Lütfen az sonra tekrar deneyin.";
