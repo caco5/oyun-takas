@@ -13,33 +13,35 @@ app.use(express.static(path.join(__dirname, 'public')));
 let trades = [];
 let users = {}; // { username: password }
 
-// Kayıt / Giriş Sistemi
-app.post('/api/auth', (req, res) => {
+// Kayıt ve Giriş Kontrolü
+app.post('/api/auth/register', (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
-        return res.status(400).json({ error: 'Kullanıcı adı ve şifre gerekli!' });
+        return res.status(400).json({ error: 'Kullanıcı adı ve şifre gereklidir!' });
     }
-
     if (users[username]) {
-        // Kullanıcı var, şifre kontrolü yap
-        if (users[username] === password) {
-            return res.json({ success: true, username });
-        } else {
-            return res.status(400).json({ error: 'Hatalı şifre! Bu kullanıcı adı alınmış.' });
-        }
-    } else {
-        // Yeni kullanıcı kaydı
-        users[username] = password;
-        return res.json({ success: true, username });
+        return res.status(400).json({ error: 'Bu kullanıcı adı zaten alınmış!' });
     }
+    users[username] = password;
+    return res.json({ success: true, username });
 });
 
-// İlanları çek
+app.post('/api/auth/login', (req, res) => {
+    const { username, password } = req.body;
+    if (!users[username]) {
+        return res.status(400).json({ error: 'Kullanıcı bulunamadı!' });
+    }
+    if (users[username] !== password) {
+        return res.status(400).json({ error: 'Hatalı şifre!' });
+    }
+    return res.json({ success: true, username });
+});
+
+// İlanlar
 app.get('/api/trades', (req, res) => {
     res.json(trades);
 });
 
-// İlan Ekle
 app.post('/api/trades', (req, res) => {
     const { game, offer, want, contact, owner } = req.body;
     const newTrade = { 
@@ -54,7 +56,6 @@ app.post('/api/trades', (req, res) => {
     res.status(201).json(newTrade);
 });
 
-// İlan Sil
 app.delete('/api/trades/:id', (req, res) => {
     const { id } = req.params;
     trades = trades.filter(t => t.id !== id);
@@ -68,7 +69,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on('send_message', (data) => {
-        // data: { tradeId, sender, message }
         io.to(data.tradeId).emit('receive_message', data);
     });
 });
