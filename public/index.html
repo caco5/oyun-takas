@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oyun Takas Pazarı</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #121212; color: #e0e0e0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        h1 { color: #2ecc71; margin-bottom: 20px; }
+        .container { width: 100%; max-width: 500px; }
+        .card { background-color: #1e1e1e; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        h2 { font-size: 1.2rem; margin-bottom: 15px; color: #ffffff; }
+        input { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #333; background-color: #2a2a2a; color: #fff; }
+        button { width: 100%; padding: 12px; border: none; border-radius: 5px; background-color: #2ecc71; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background-color: #27ae60; }
+        .trade-item { background-color: #2a2a2a; border-left: 4px solid #2ecc71; padding: 12px; margin-bottom: 10px; border-radius: 4px; }
+        .game-title { font-weight: bold; color: #2ecc71; }
+        .contact-info { margin-top: 5px; font-size: 0.85rem; color: #f1c40f; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Oyun Takas Pazarı</h1>
+
+        <div class="card">
+            <h2>Yeni Takas İlanı Oluştur</h2>
+            <form id="tradeForm">
+                <input type="text" id="game" placeholder="Oyun Adı (Örn: CS2, Roblox)" required>
+                <input type="text" id="offer" placeholder="Verdiğin Eşya/Hesap" required>
+                <input type="text" id="want" placeholder="İstediğin Eşya/Hesap" required>
+                <input type="text" id="contact" placeholder="İletişim Bilgin (Discord / Roblox Adı vb.)" required>
+                <button type="submit">İlanı Yayınla</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Aktif Takas İlanları</h2>
+            <div id="tradesList">Yükleniyor...</div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchTrades() {
+            try {
+                const res = await fetch('/api/trades');
+                const trades = await res.json();
+                const container = document.getElementById('tradesList');
+                container.innerHTML = '';
+                
+                if(trades.length === 0) {
+                    container.innerHTML = '<p>Henüz ilan yok.</p>';
+                    return;
+                }
+
+                trades.reverse().forEach(trade => {
+                    const div = document.createElement('div');
+                    div.className = 'trade-item';
+                    div.innerHTML = `
+                        <div class="game-title">[${trade.game}]</div>
+                        <div>📤 <b>Verilen:</b> ${trade.offer}</div>
+                        <div>📥 <b>İstenen:</b> ${trade.want}</div>
+                        <div class="contact-info">💬 <b>İletişim:</b> ${trade.contact || 'Belirtilmedi'}</div>
+                    `;
+                    container.appendChild(div);
+                });
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        document.getElementById('tradeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const game = document.getElementById('game').value;
+            const offer = document.getElementById('offer').value;
+            const want = document.getElementById('want').value;
+            const contact = document.getElementById('contact').value;
+
+            await fetch('/api/trades', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ game, offer, want, contact })
+            });
+
+            document.getElementById('tradeForm').reset();
+            fetchTrades();
+        });
+
+        fetchTrades();
+    </script>
+</body>
+</html>
