@@ -16,12 +16,13 @@
         button { width: 100%; padding: 12px; border: none; border-radius: 5px; background-color: #2ecc71; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { background-color: #27ae60; }
 
-        /* Giriş Ekranı Pop-up */
+        /* Giriş/Kayıt Modal */
         .auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center; z-index: 2000; }
         .auth-box { background: #1e1e1e; padding: 25px; border-radius: 10px; width: 90%; max-width: 350px; text-align: center; border: 1px solid #2ecc71; }
         .auth-error { color: #e74c3c; font-size: 0.85rem; margin-bottom: 10px; display: none; }
+        .switch-auth { font-size: 0.8rem; color: #3498db; margin-top: 10px; cursor: pointer; text-decoration: underline; }
 
-        /* İlan Kartı & Silme Çarpısı */
+        /* İlan Kartı */
         .trade-item { background-color: #2a2a2a; border-left: 4px solid #2ecc71; padding: 12px; margin-bottom: 10px; border-radius: 4px; position: relative; }
         .delete-btn { position: absolute; top: 10px; right: 12px; color: #e74c3c; font-size: 1.2rem; font-weight: bold; cursor: pointer; }
         .delete-btn:hover { color: #ff6b6b; }
@@ -31,23 +32,20 @@
         .chat-btn { margin-top: 10px; background-color: #3498db; width: auto; padding: 8px 12px; font-size: 0.85rem; }
         .chat-btn:hover { background-color: #2980b9; }
 
-        /* Mesajlaşma Kutusu */
+        /* Mesajlaşma Modal */
         .chat-modal { display: none; position: fixed; bottom: 10px; right: 10px; width: 90%; max-width: 350px; height: 420px; background-color: #1e1e1e; border: 2px solid #3498db; border-radius: 10px; z-index: 1000; flex-direction: column; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
         .chat-header { background-color: #3498db; padding: 10px; color: white; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         .close-chat { cursor: pointer; font-weight: bold; }
         .chat-messages { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-        
-        /* Mesaj Renkleri */
         .message { padding: 8px 12px; border-radius: 6px; max-width: 80%; word-break: break-word; font-size: 0.9rem; }
-        .message.my-msg { background-color: #2ecc71; color: #121212; align-self: flex-end; } /* Benim yazdığım Yeşil */
-        .message.other-msg { background-color: #ffffff; color: #121212; align-self: flex-start; } /* Karşıdaki Beyaz */
+        .message.my-msg { background-color: #2ecc71; color: #121212; align-self: flex-end; }
+        .message.other-msg { background-color: #ffffff; color: #121212; align-self: flex-start; }
         .msg-sender { font-size: 0.75rem; font-weight: bold; margin-bottom: 2px; opacity: 0.8; }
-
         .chat-input-area { display: flex; padding: 10px; gap: 5px; background-color: #121212; }
         .chat-input-area input { margin-bottom: 0; }
         .chat-input-area button { width: 70px; padding: 10px; }
 
-        /* Silme Onay Modalı */
+        /* Silme Onay Modal */
         .confirm-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 3000; }
         .confirm-box { background: #1e1e1e; padding: 20px; border-radius: 8px; text-align: center; width: 80%; max-width: 300px; border: 1px solid #e74c3c; }
         .confirm-buttons { display: flex; gap: 10px; margin-top: 15px; }
@@ -60,22 +58,24 @@
     <!-- Giriş / Kayıt Ekranı -->
     <div id="authOverlay" class="auth-overlay">
         <div class="auth-box">
-            <h2>Giriş Yap / Kaydol</h2>
-            <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 15px;">İlk defa giriyorsan hesabın otomatik oluşturulur.</p>
+            <h2 id="authTitle">Kayıt Ol</h2>
             <div id="authError" class="auth-error"></div>
+            
             <input type="text" id="authUsername" placeholder="Kullanıcı Adı">
             <input type="password" id="authPassword" placeholder="Şifre">
-            <button onclick="login()">Giriş Yap / Kaydol</button>
+            
+            <button id="authBtn" type="button" onclick="handleAuth()">Kaydol</button>
+            <div id="switchAuth" class="switch-auth" onclick="toggleAuthMode()">Zaten hesabın var mı? Giriş Yap</div>
         </div>
     </div>
 
-    <!-- Onay Penceresi (Silme için) -->
+    <!-- Silme Onay Penceresi -->
     <div id="confirmModal" class="confirm-modal">
         <div class="confirm-box">
             <p>İlanı kaldırmak istiyor musun?</p>
             <div class="confirm-buttons">
-                <button class="confirm-btn-yes" onclick="confirmDelete(true)">Evet</button>
-                <button class="confirm-btn-no" onclick="confirmDelete(false)">Hayır</button>
+                <button class="confirm-btn-yes" type="button" onclick="confirmDelete(true)">Evet</button>
+                <button class="confirm-btn-no" type="button" onclick="confirmDelete(false)">Hayır</button>
             </div>
         </div>
     </div>
@@ -83,7 +83,8 @@
     <div class="container">
         <h1>🎮 Oyun Takas Pazarı</h1>
         <div style="text-align: right; margin-bottom: 10px; font-size: 0.9rem;">
-            Giriş Yapan: <b id="currentUserDisplay" style="color:#2ecc71;">-</b>
+            Kullanıcı: <b id="currentUserDisplay" style="color:#2ecc71;">-</b>
+            <span style="font-size:0.75rem; color:#888; cursor:pointer; margin-left:8px;" onclick="logout()">(Çıkış Yap)</span>
         </div>
 
         <div class="card">
@@ -112,47 +113,85 @@
         <div id="chatMessages" class="chat-messages"></div>
         <div class="chat-input-area">
             <input type="text" id="msgInput" placeholder="Mesaj yaz..." onkeypress="if(event.key==='Enter') sendMsg()">
-            <button onclick="sendMsg()">Gönder</button>
+            <button type="button" onclick="sendMsg()">Gönder</button>
         </div>
     </div>
 
     <script>
         const socket = io();
         let currentUser = null;
+        let isLoginMode = false;
         let currentTradeId = null;
         let tradeToDeleteId = null;
 
-        // Giriş Yap / Kaydol
-        async function login() {
+        window.onload = function() {
+            const savedUser = localStorage.getItem('trade_app_user');
+            if (savedUser) {
+                currentUser = savedUser;
+                isLoginMode = true;
+                document.getElementById('authTitle').innerText = savedUser + " - Şifre Gir";
+                document.getElementById('authUsername').value = savedUser;
+                document.getElementById('authUsername').style.display = 'none';
+                document.getElementById('authBtn').innerText = "Giriş Yap";
+                document.getElementById('switchAuth').style.display = 'none';
+            }
+        };
+
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('authError').style.display = "none";
+            if (isLoginMode) {
+                document.getElementById('authTitle').innerText = "Giriş Yap";
+                document.getElementById('authBtn').innerText = "Giriş Yap";
+                document.getElementById('switchAuth').innerText = "Hesabın yok mu? Kaydol";
+            } else {
+                document.getElementById('authTitle').innerText = "Kayıt Ol";
+                document.getElementById('authBtn').innerText = "Kaydol";
+                document.getElementById('switchAuth').innerText = "Zaten hesabın var mı? Giriş Yap";
+            }
+        }
+
+        async function handleAuth() {
             const username = document.getElementById('authUsername').value.trim();
             const password = document.getElementById('authPassword').value.trim();
             const errorDiv = document.getElementById('authError');
 
-            if (!username || !password) {
-                errorDiv.innerText = "Lütfen isim ve şifre girin!";
+            if (!password || (!isLoginMode && !username)) {
+                errorDiv.innerText = "Lütfen alanları doldurun!";
                 errorDiv.style.display = "block";
                 return;
             }
 
-            const res = await fetch('/api/auth', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
+            try {
+                const endpoint = isLoginMode ? '/api/auth/login' : '/api/auth/register';
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
 
-            const data = await res.json();
-            if (res.ok) {
-                currentUser = data.username;
-                document.getElementById('currentUserDisplay').innerText = currentUser;
-                document.getElementById('authOverlay').style.display = 'none';
-                fetchTrades();
-            } else {
-                errorDiv.innerText = data.error;
+                const data = await res.json();
+                if (res.ok) {
+                    currentUser = data.username;
+                    localStorage.setItem('trade_app_user', currentUser);
+                    document.getElementById('currentUserDisplay').innerText = currentUser;
+                    document.getElementById('authOverlay').style.display = 'none';
+                    fetchTrades();
+                } else {
+                    errorDiv.innerText = data.error || 'Bir hata oluştu!';
+                    errorDiv.style.display = "block";
+                }
+            } catch (err) {
+                errorDiv.innerText = "Sunucuya bağlanılamadı. Lütfen az sonra tekrar deneyin.";
                 errorDiv.style.display = "block";
             }
         }
 
-        // İlanları Getir
+        function logout() {
+            localStorage.removeItem('trade_app_user');
+            location.reload();
+        }
+
         async function fetchTrades() {
             try {
                 const res = await fetch('/api/trades');
@@ -175,7 +214,7 @@
                         <div>📥 <b>İstenen:</b> ${trade.want}</div>
                         <div class="contact-info">💬 <b>İletişim:</b> ${trade.contact}</div>
                         <div class="trade-owner">İlan Sahibi: ${trade.owner || 'Anonim'}</div>
-                        <button class="chat-btn" onclick="openChat('${trade.id}', '${trade.game}')">💬 Sohbet Et</button>
+                        <button class="chat-btn" type="button" onclick="openChat('${trade.id}', '${trade.game}')">💬 Sohbet Et</button>
                     `;
                     container.appendChild(div);
                 });
@@ -184,7 +223,6 @@
             }
         }
 
-        // İlan Yayınla
         document.getElementById('tradeForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const game = document.getElementById('game').value;
@@ -202,13 +240,11 @@
             fetchTrades();
         });
 
-        // Silme Onay Penceresi Aç
         function openDeleteModal(tradeId) {
             tradeToDeleteId = tradeId;
             document.getElementById('confirmModal').style.display = 'flex';
         }
 
-        // Silme Kararı
         async function confirmDelete(isYes) {
             document.getElementById('confirmModal').style.display = 'none';
             if (isYes && tradeToDeleteId) {
@@ -218,7 +254,6 @@
             tradeToDeleteId = null;
         }
 
-        // Sohbet İşlemleri
         function openChat(tradeId, gameName) {
             currentTradeId = tradeId;
             document.getElementById('chatTitle').innerText = gameName + " - Takas Sohbeti";
@@ -245,7 +280,6 @@
             }
         }
 
-        // Mesaj Geldiğinde
         socket.on('receive_message', (data) => {
             if(data.tradeId === currentTradeId) {
                 const msgDiv = document.createElement('div');
@@ -263,3 +297,4 @@
     </script>
 </body>
 </html>
+
