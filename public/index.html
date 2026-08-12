@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Oyun Takas Pazarı</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #121212; color: #fff; margin: 0; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { color: #00e676; text-align: center; }
+    .card { background: #1e1e1e; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+    input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; border-radius: 4px; border: none; }
+    input { background: #2a2a2a; color: #fff; }
+    button { background: #00e676; color: #000; font-weight: bold; cursor: pointer; }
+    .trade-item { background: #2a2a2a; border-left: 4px solid #00e676; padding: 10px; margin-top: 10px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎮 Oyun Takas Pazarı</h1>
+    
+    <div class="card">
+      <h3>Yeni Takas İlanı Oluştur</h3>
+      <input type="text" id="game" placeholder="Oyun Adı (Örn: CS2, Roblox)">
+      <input type="text" id="offer" placeholder="Verdiğin Eşya/Hesap">
+      <input type="text" id="want" placeholder="İstediğin Eşya/Hesap">
+      <button onclick="addTrade()">İlanı Yayınla</button>
+    </div>
+
+    <div class="card">
+      <h3>Aktif Takas İlanları</h3>
+      <div id="tradeList">Yükleniyor...</div>
+    </div>
+  </div>
+
+  <script>
+    async function loadTrades() {
+      const res = await fetch('/api/trades');
+      const trades = await res.json();
+      const list = document.getElementById('tradeList');
+      list.innerHTML = trades.map(t => `
+        <div class="trade-item">
+          <strong>[${t.game}]</strong> <br>
+          📤 <b>Verilen:</b> ${t.offer} <br>
+          📥 <b>İstenen:</b> ${t.want}
+        </div>
+      `).join('');
+    }
+
+    async function addTrade() {
+      const game = document.getElementById('game').value;
+      const offer = document.getElementById('offer').value;
+      const want = document.getElementById('want').value;
+
+      await fetch('/api/trades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ game, offer, want })
+      });
+
+      document.getElementById('game').value = '';
+      document.getElementById('offer').value = '';
+      document.getElementById('want').value = '';
+      loadTrades();
+    }
+
+    loadTrades();
+  </script>
+</body>
+</html>
